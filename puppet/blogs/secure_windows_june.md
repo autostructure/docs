@@ -8,7 +8,7 @@ We have developed a module on the forge that hardens Windows Server 2012 and 201
 
 ## Getting Started
 
-The `secure_windows` module is very easy to get started with. By default, all vulnerabilities are enforced with reasonable default values. To get started, simply instantiate the class in your puppet code. We recommend including this module as part of your base profile for Windows.
+The `secure_windows` module is very easy to use. To get started, simply instantiate the class in your puppet code. We recommend including this module as part of your base profile for Windows.
 
 ```puppet
 # Base Profile for Windows
@@ -18,7 +18,7 @@ class profile::base_windows {
 }
 ```
 
-The above code is all you need to reach full compliance. Separate hardening rules will be applied for standalone servers, member servers, and domain controllers. You do not need to put any extra logic into your base profile for these server types, our module does the heavy lifting for you.
+The above code is all you need to reach compliance with 90% of Windows Server STIG vulnerabilities. Separate hardening rules will be applied for standalone servers, member servers, and domain controllers. You do not need to put any extra logic into your base profile for these server types, our module does the heavy lifting for you.
 
 ## No-op Mode
 
@@ -32,13 +32,13 @@ After reviewing the report with our sysadmins and security team, we go ahead and
 
 ## Enforce!
 
-Run puppet on your machines and within minutes they will be compliant.
+Run puppet on your machines and within minutes they will be hardened.
 
 ```shell
 puppet agent -t
 ```
 
-dc1.example.com is now compliant, just from this simple line of code.
+dc1.example.com is now secure, just from this simple line of code.
 
 
 ## Under the Hood
@@ -68,7 +68,7 @@ Other vulnerabilities only apply to domain controllers. Some spit out warnings.
 
 ## Selectively Enforcing Vulnerabilities
 
-Keep in mind there are a lot of exceptions and you might want to turn certain vulnerabilities on or off depending on the system running the Puppet agent.
+By default, all vulnerabilities are enforced with reasonable default values. Keep in mind there are a lot of exceptions in the Windows Server STIGs and you might want to turn certain vulnerabilities on or off depending on the system running the Puppet agent.
 
 Here's how you can do this in your ogranization's Hiera at the 'role' level:
 
@@ -80,10 +80,50 @@ secure_windows::stig::v73101::enforced: false
 This disables the vulnerability for this kind of server, in our case video servers. You can then use your own code.
 
 
+## Setting Parameters
+
+The default values of certain vulnerabilities can be overwritten by parameters in order to provide customization for organization-specific values. See our reference for a list of parameters for this module.
+
+As an example, let's set the appropriate time server for our example organization.
+
+```puppet
+# hieradata/common.yaml
+secure_windows::stig::v73307::time_server: time.example.com
+```
+
+Our module will take this parameter and apply the correct configurations for the Primary Domain Controller, Backup Domain Controllers, Member Servers, and Standalone Servers.
+
+
 ## Reverse Engineering Existing Security Settings
 
-Use the puppet resource command to reverse engineer.
+The `puppet resource` command can convert current system state into Puppet code using any Puppet resource type.
 
+In our case, we can use `puppet resource` to reverse-engineer security settings on our existing infrastructure to enforce them with Puppet.
+
+Take, for example, AppLocker rules. AppLocker is a Windows whitelisting utility for applications. Organizations might have custom rules already defined for their organization that they want to maintain. You can use `puppet resource applocker_rule` to return all current AppLocker rules as Puppet code. From there you can copy the code into your Puppet manifests to begin enforcing them.
+
+```puppet
+applocker_rule { '(STIG Rule) V-73225 - Disable IE for Administrators':
+  ensure            => 'present',
+  action            => 'Deny',
+  conditions        => [
+  {
+    'publisher'  => 'O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US',
+    'product'    => 'INTERNET EXPLORER',
+    'binaryname' => '*',
+    'hi_version' => '*',
+    'lo_version' => '11.0.0.0'
+  }],
+  description       => 'STIG Rule addressing vulnerability V-73225: Administrative accounts must not be used with applications that access the Internet, such as web browsers, or with potential Internet sources, such as email.',
+  mode              => 'NotConfigured',
+  rule_type         => 'publisher',
+  type              => 'Exe',
+  user_or_group_sid => 'S-1-5-32-544',
+}
+```
+
+
+This can be used with other useful Windows modules, like ad_acl, to return Active Directory information and begin enforcing your current configurations. This can also be useful during migrations of configurations to new systems.
 
 
 ## What's Next?
