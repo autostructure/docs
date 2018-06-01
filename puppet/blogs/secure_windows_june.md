@@ -4,7 +4,7 @@
 
 The team at Autostructure has found that Puppet Enterprise is useful in the security space, as it can monitor, enforce, and report on baseline security configurations across your infrastructure.
 
-We have developed a module on the forge that hardens Windows Server 2012 and 2016 to Department of Defense (DOD) Security Technical Implementation Guide (STIG) specifications. This is an important part of NIST 800-53 compliance. Along our journey developing this module, we learned a lot about how to secure Windows with Puppet and are going to share our experience.
+We have developed a module on the forge that hardens Windows Server 2012 and 2016 to Department of Defense (DOD) Security Technical Implementation Guide (STIG) specifications. This is an important part of NIST 800-53 compliance, which is a commonly used security standard in the government. Along our journey developing this module, we learned a lot about how to secure Windows with Puppet and are going to share our experience.
 
 ## Getting Started
 
@@ -24,7 +24,7 @@ The above code is all you need to reach full compliance. Separate hardening rule
 
 As an example, let's take an existing domain controller dc1.example.com and harden it.
 
-The `secure_windows` module will make a lot of changes on the system, and it can be helpful to review these changes before enforcing them on your production servers. To do this, run puppet in `noop` mode. You can do this in the PE Console on on the command line with `puppet agent -t --noop`.
+The `secure_windows` module will make a lot of changes on the system, and it can be helpful to review these changes before enforcing them on your production servers. To do this, run puppet in `noop` mode. You can do this in the PE Console or on the command line with `puppet agent -t --noop`.
 
 This will output all the changes that Puppet would have made on the system. This report tells us what is out of compliance on the machine and can be used for auditing your infrastructure. In the case of dc1.example.com we will examine the changes our module will make to security settings and then choose if we would like to enforce them.
 
@@ -38,7 +38,7 @@ Run puppet on your machines and within minutes they will be compliant.
 puppet agent -t
 ```
 
-dc1.example.com is now compliant.
+dc1.example.com is now compliant, just from this simple line of code.
 
 
 ## Under the Hood
@@ -68,16 +68,16 @@ Other vulnerabilities only apply to domain controllers. Some spit out warnings.
 
 ## Selectively Enforcing Vulnerabilities
 
-Keep in mind there are a lot of exceptions and you might want to turn some on or off depending on the system.
+Keep in mind there are a lot of exceptions and you might want to turn certain vulnerabilities on or off depending on the system running the Puppet agent.
 
-Here's how to do that:
+Here's how you can do this in your ogranization's Hiera at the 'role' level:
 
 ```yaml
 # hieradata/role/videoserver.yaml
 secure_windows::stig::v73101::enforced: false
 ```
 
-This disables the vulnerability for this kind of server. You can then use your own code.
+This disables the vulnerability for this kind of server, in our case video servers. You can then use your own code.
 
 
 ## Reverse Engineering Existing Security Settings
